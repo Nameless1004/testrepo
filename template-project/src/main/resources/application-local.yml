@@ -1,0 +1,27 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+        use_sql_comments: true
+#server:
+#  servlet:
+#    encoding:
+#      charset: utf-8
+#      force: true
+#jwt:
+#  secret:
+#    key: ${JWT_TOKEN}
+#admin:
+#  token: ${ADMINTOKEN}
