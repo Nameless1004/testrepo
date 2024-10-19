@@ -83,7 +83,7 @@ def jacocoExcludePatterns = [
 
 sonar {
     properties {
-        property "sonar.projectKey", "Nameless1004_github-action-test"
+        property "sonar.projectKey", "Nameless1004_testrepo"
         property "sonar.organization", "nameless1004"
         property "sonar.host.url", "https://sonarcloud.io"
         property 'sonar.sources', 'src'
