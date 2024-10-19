@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -37,10 +38,11 @@ public class WebSecurityConfig {
             .logout(AbstractHttpConfigurer::disable) // LogoutFilter 비활성화
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/signup", "/auth/login", "/auth/reissue").permitAll()
+                .requestMatchers("/user/**").permitAll()
                 .requestMatchers("/auth/logout").authenticated()
                 .anyRequest().authenticated()
             );
-
+        http.formLogin((x)->x.loginPage("/user/login"));
         http.cors(c -> {
             c.configurationSource(corsConfigurationSource);});
 
