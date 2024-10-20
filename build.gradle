@@ -91,6 +91,7 @@ sonar {
         property 'sonar.sourceEncoding', 'UTF-8'
         property 'sonar.test.exclusions', jacocoExcludePatterns.join(',')
         property 'sonar.test.inclusions', '**/*Test.java'
+        property 'sonar.coveragePlugin', 'jacoco'
     }
 }
 
