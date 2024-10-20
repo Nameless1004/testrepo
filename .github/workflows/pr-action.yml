@@ -5,13 +5,10 @@ on:
       branches: ["main"]
 
 jobs:
-  test: 
+  test:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
-    defaults:
-      run:
-        working-directory: ./trello-project
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -29,12 +26,18 @@ jobs:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
-  
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: check
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+
       - name: SonarCloud scan
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew clean sonar --info --stacktrace
+        run: ./gradlew sonar --info --stacktrace
 
       - name: pull-request-test-success-slack-notice
         uses: 8398a7/action-slack@v3
