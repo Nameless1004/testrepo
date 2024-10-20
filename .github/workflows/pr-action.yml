@@ -29,11 +29,11 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: SonarCloud scan
+      - name: Test and Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew sonar --info --stacktrace
+        run: ./gradlew test sonar --info --stacktrace
 
 #      - name: pull-request-test-success-slack-notice
 #        uses: 8398a7/action-slack@v3
