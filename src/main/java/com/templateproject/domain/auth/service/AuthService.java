@@ -63,7 +63,7 @@ public class AuthService {
 
         // 회원 중복 확인
         if (userRepository.existsByUsername(username)) {
-            throw new InvalidRequestException("중복된 사용자가 존재합니다.");
+            throw new InvalidRequestException("중복된 아이디가 존재합니다.");
         }
 
         // email 중복확인

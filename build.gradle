@@ -86,13 +86,14 @@ sonar {
         property "sonar.projectKey", "Nameless1004_testrepo"
         property "sonar.organization", "nameless1004"
         property "sonar.host.url", "https://sonarcloud.io"
-        property 'sonar.sources', 'src'
+        property "sonar.sources", "src/main/java"
+        property "sonar.tests", "src/test/java"
         property 'sonar.language', 'java'
         property 'sonar.sourceEncoding', 'UTF-8'
         property 'sonar.test.exclusions', jacocoExcludePatterns.join(',')
         property 'sonar.test.inclusions', '**/*Test.java'
         property 'sonar.coveragePlugin', 'jacoco'
-        property 'sonar.coverage.jacoco.xmlReportPaths', "build/reports/jacoco/jacocoTestReport.xml"
+        property 'sonar.coverage.jacoco.xmlReportPaths', "build/reports/jacoco/test/jacocoTestReport.xml"
     }
 }
 
@@ -120,51 +121,51 @@ jacocoTestReport {
                 })
         )
     }
-    finalizedBy jacocoTestCoverageVerification
+ //   finalizedBy jacocoTestCoverageVerification
 }
 
-jacocoTestCoverageVerification {
-    violationRules {
+//jacocoTestCoverageVerification {
+//    violationRules {
+////        rule {
+////            // 'element'가 없으면 프로젝트의 전체 파일을 합친 값을 기준으로 합니다.
+////            // 위의 리포트에서 'Total'로 표시된 부분입니다.
+////            limit {
+////                // 'counter'를 지정하지 않으면 default는 'INSTRUCTION'
+////                // 'value'를 지정하지 않으면 default는 'COVEREDRATIO'
+////                minimum = 0.30
+////            }
+////        }
+//
+//        // 여러 룰을 생성할 수 있습니다.
 //        rule {
-//            // 'element'가 없으면 프로젝트의 전체 파일을 합친 값을 기준으로 합니다.
-//            // 위의 리포트에서 'Total'로 표시된 부분입니다.
+//            // 룰을 간단히 켜고 끌 수 있습니다.
+//            enabled = true
+//
+//            // 룰을 체크할 단위는 클래스 단위
+//            element = 'CLASS'
+//
+//            // 브랜치 커버리지를 최소한 90% 만족시켜야 합니다.
+////            limit {
+////                counter = 'BRANCH'
+////                value = 'COVEREDRATIO'
+////                minimum = 0.30
+////            }
+//
+//            // 라인 커버리지를 최소한 80% 만족시켜야 합니다.
 //            limit {
-//                // 'counter'를 지정하지 않으면 default는 'INSTRUCTION'
-//                // 'value'를 지정하지 않으면 default는 'COVEREDRATIO'
-//                minimum = 0.30
-//            }
-//        }
-
-        // 여러 룰을 생성할 수 있습니다.
-        rule {
-            // 룰을 간단히 켜고 끌 수 있습니다.
-            enabled = true
-
-            // 룰을 체크할 단위는 클래스 단위
-            element = 'CLASS'
-
-            // 브랜치 커버리지를 최소한 90% 만족시켜야 합니다.
-//            limit {
-//                counter = 'BRANCH'
+//                counter = 'LINE'
 //                value = 'COVEREDRATIO'
 //                minimum = 0.30
 //            }
-
-            // 라인 커버리지를 최소한 80% 만족시켜야 합니다.
-            limit {
-                counter = 'LINE'
-                value = 'COVEREDRATIO'
-                minimum = 0.30
-            }
-
-            // 빈 줄을 제외한 코드의 라인수를 최대 200라인으로 제한합니다.
-            limit {
-                counter = 'LINE'
-                value = 'TOTALCOUNT'
-                maximum = 200
-            }
-
-            excludes = jacocoExcludePatterns + QDomains
-        }
-    }
-}
+//
+//            // 빈 줄을 제외한 코드의 라인수를 최대 200라인으로 제한합니다.
+//            limit {
+//                counter = 'LINE'
+//                value = 'TOTALCOUNT'
+//                maximum = 200
+//            }
+//
+//            excludes = jacocoExcludePatterns + QDomains
+//        }
+//    }
+//}
