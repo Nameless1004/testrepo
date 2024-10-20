@@ -7,7 +7,6 @@ import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -27,8 +26,7 @@ public class JwtUtil {
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String REFRESH_TOKEN_HEADER = "Refresh-Token";
     public static final String REDIS_REFRESH_TOKEN_PREFIX = "Refresh_";
-    // 사용자 권한 값의 KEY
-    public static final String AUTHORIZATION_KEY = "auth";
+
     // Token 식별자
     public static final String BEARER_PREFIX = "Bearer ";
 
@@ -43,20 +41,6 @@ public class JwtUtil {
         key = getSecretKeyFromBase64(secretKey);
     }
 
-    public void addTokenToHeader(HttpServletResponse response, String token) {
-        token = URLEncoder.encode(token, StandardCharsets.UTF_8)
-            .replaceAll("\\+", "%20");
-
-        response.addHeader(AUTHORIZATION_HEADER, token);
-    }
-
-    public boolean canSubstringToken(String token) {
-        if (StringUtils.hasText(token) && token.startsWith(BEARER_PREFIX)) {
-            return true;
-        }
-
-        return false;
-    }
     public String substringToken(String token) {
         if (StringUtils.hasText(token) && token.startsWith(BEARER_PREFIX)) {
             return token.substring(BEARER_PREFIX.length());
@@ -71,13 +55,6 @@ public class JwtUtil {
             .getPayload().getSubject();
     }
 
-    public String getRole(String token) {
-
-        return getJwtParser().parseSignedClaims(token)
-            .getPayload()
-            .get(AUTHORIZATION_KEY, String.class);
-    }
-
     public boolean isExpired(String token) {
         return getJwtParser().parseSignedClaims(token)
             .getPayload()
@@ -85,22 +62,11 @@ public class JwtUtil {
             .before(new Date());
     }
 
-    private JwtParser getJwtParser() {
-        return Jwts.parser()
-            .verifyWith(key)
-            .build();
-    }
-
-    private SecretKey getSecretKeyFromBase64(String base64) {
-        return Keys.hmacShaKeyFor(Base64Coder.decode(base64));
-    }
-
-    public String getCategory(String token) {
+    public String getTokenCategory(String token) {
         return getJwtParser().parseSignedClaims(token)
             .getPayload()
             .get("category", String.class);
     }
-
 
     public String createAccessToken(Long userId, String email, UserRole role) {
         Date now = new Date();
@@ -130,5 +96,15 @@ public class JwtUtil {
 
     public Claims extractClaims(String token) {
         return getJwtParser().parseSignedClaims(token).getPayload();
+    }
+
+    private JwtParser getJwtParser() {
+        return Jwts.parser()
+            .verifyWith(key)
+            .build();
+    }
+
+    private SecretKey getSecretKeyFromBase64(String base64) {
+        return Keys.hmacShaKeyFor(Base64Coder.decode(base64));
     }
 }

@@ -1,6 +1,5 @@
 package com.templateproject.domain.auth.service;
 
-import com.templateproject.common.annotations.ExecutionTimeLog;
 import com.templateproject.common.dto.ResponseDto;
 import com.templateproject.common.enums.TokenType;
 import com.templateproject.common.enums.UserRole;
@@ -10,17 +9,18 @@ import com.templateproject.domain.auth.dto.AuthRequest;
 import com.templateproject.domain.auth.dto.AuthRequest.Login;
 import com.templateproject.domain.auth.dto.AuthResponse;
 import com.templateproject.domain.auth.dto.AuthResponse.DuplicateCheck;
+import com.templateproject.domain.auth.dto.AuthResponse.Reissue;
 import com.templateproject.domain.user.entitiy.User;
 import com.templateproject.domain.user.repository.UserRepository;
 import com.templateproject.security.AuthUser;
 import com.templateproject.security.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,7 +35,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedissonClient redissonClient;
 
     @Value("${ADMIN_TOKEN}")
     private String adminToken;
@@ -46,6 +46,10 @@ public class AuthService {
      * @return
      */
     public ResponseDto<AuthResponse.Signup> signup(AuthRequest.Signup request) {
+        if(!request.password().matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>])[A-Za-z\\d!@#$%^&*(),.?\":{}|<>]{8,}$")) {
+            throw new InvalidRequestException("비밀번호는 대소문자 포함 영문 + 숫자 + 특수문자를 최소 1글자씩 포함해야하며 최소 8글자 이상이어야 합니다.");
+        }
+
         if(request.userRole() == UserRole.ROLE_ADMIN) {
             if( !StringUtils.hasText(request.adminToken()) || !request.adminToken().equals(adminToken)) {
                 throw new AuthException("관리자 권한이 없습니다.");
@@ -87,6 +91,7 @@ public class AuthService {
     public ResponseDto<AuthResponse.Login> login(Login request) {
         User user = userRepository.findByUsername(request.username()).orElseThrow(()-> new InvalidRequestException("아이디 또는 비밀번호가 잘못되었습니다."));
 
+
         if(!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new InvalidRequestException("아이디 또는 비밀번호가 잘못되었습니다.");
         }
@@ -105,7 +110,7 @@ public class AuthService {
         String accessToken = jwtUtil.createAccessToken(user.getId(), user.getEmail(), user.getRole());
         String refreshToken = jwtUtil.createRefreshToken(user.getId(), user.getEmail(), user.getRole());
 
-        redisTemplate.opsForValue().set(JwtUtil.REDIS_REFRESH_TOKEN_PREFIX + user.getId(), refreshToken, TokenType.REFRESH.getLifeTime(), TimeUnit.MILLISECONDS);
+        redissonClient.getBucket(JwtUtil.REDIS_REFRESH_TOKEN_PREFIX + user.getId()).set(refreshToken, Duration.ofMillis(TokenType.REFRESH.getLifeTime()));
         return ResponseDto.of(HttpStatus.OK, "성공적으로 로그인 되었습니다.",new AuthResponse.Login(user, accessToken, refreshToken));
 
     }
@@ -116,7 +121,7 @@ public class AuthService {
      * @return
      */
     public ResponseDto<Void> logout(AuthUser user) {
-        redisTemplate.delete(JwtUtil.REDIS_REFRESH_TOKEN_PREFIX + user.getUserId());
+        redissonClient.getBucket(JwtUtil.REDIS_REFRESH_TOKEN_PREFIX + user.getUserId()).delete();
         return ResponseDto.of(HttpStatus.OK, "로그아웃되었습니다.");
     }
 
@@ -139,7 +144,7 @@ public class AuthService {
         }
 
         // 리프레쉬 토큰인지 검사
-        String category = jwtUtil.getCategory(refreshToken);
+        String category = jwtUtil.getTokenCategory(refreshToken);
         if (!category.equals(TokenType.REFRESH.name())) {
             return ResponseDto.of(HttpStatus.BAD_REQUEST, "리프레쉬 토큰이 아닙니다.");
         }
@@ -154,7 +159,7 @@ public class AuthService {
 
         String key = JwtUtil.REDIS_REFRESH_TOKEN_PREFIX  + jwtUtil.getUserId(refreshToken);
         // 레디스에서 리프레쉬 토큰을 가져온다.
-        refreshToken = (String) redisTemplate.opsForValue().get(key);
+        refreshToken = (String) redissonClient.getBucket(key).get();
 
         if (refreshToken == null) {
             return ResponseDto.of(HttpStatus.UNAUTHORIZED, "만료된 리프레쉬 토큰입니다.", null);
@@ -175,15 +180,16 @@ public class AuthService {
 
         // TTL 새로해서
         String userIdToString = String.valueOf(userId);
-        Long ttl = redisTemplate.getExpire(JwtUtil.REDIS_REFRESH_TOKEN_PREFIX + userIdToString, TimeUnit.MILLISECONDS);
+        RBucket<Object> refreshBucket = redissonClient.getBucket(JwtUtil.REDIS_REFRESH_TOKEN_PREFIX + userIdToString);
+        long ttl = refreshBucket.remainTimeToLive();
 
-        if(ttl == null || ttl < 0) {
+        if(ttl < 0) {
             return ResponseDto.of(HttpStatus.UNAUTHORIZED, "만료된 리프레쉬 토큰입니다.", null);
         }
 
-        redisTemplate.opsForValue().set(JwtUtil.REDIS_REFRESH_TOKEN_PREFIX  + userIdToString, newRefreshToken, ttl, TimeUnit.MILLISECONDS);
+        refreshBucket.set(newRefreshToken, Duration.ofMillis(ttl));
 
-        AuthResponse.Reissue reissue = new AuthResponse.Reissue(newAccessToken, newRefreshToken);
+        Reissue reissue = new Reissue(newAccessToken, newRefreshToken);
 
         return  ResponseDto.of(HttpStatus.OK, "", reissue);
     }

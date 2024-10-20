@@ -1,0 +1,54 @@
+name: Measure coverage
+
+on:
+  pull_request:
+      branches: ["main"]
+
+jobs:
+  test: 
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      - name: chmod gradle
+        run: chmod +x ./gradlew
+        working-directory: ${{ github.workspace }}/trello-project
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: SonarCloud scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew sonar #--info --stacktrace
+        working-directory: ${{ github.workspace }}/trello-project
+
+      - name: pull-request-test-success-slack-notice
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_GIT_WEBHOOK_URL}}
+        if: success()
+
+      - name: pull-request-test-failure-slack-notice
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_GIT_WEBHOOK_URL}}
+        if: failure()
