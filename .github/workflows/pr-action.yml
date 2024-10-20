@@ -29,26 +29,26 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: SonarCloud scan
+      - name: Test and Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew sonar --info --stacktrace
+        run: ./gradlew test sonar --info --stacktrace
 
-      - name: pull-request-test-success-slack-notice
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_GIT_WEBHOOK_URL}}
-        if: success()
-
-      - name: pull-request-test-failure-slack-notice
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_GIT_WEBHOOK_URL}}
-        if: failure()
+#      - name: pull-request-test-success-slack-notice
+#        uses: 8398a7/action-slack@v3
+#        with:
+#          status: ${{ job.status }}
+#          fields: repo,message,commit,author,action,eventName,ref,workflow
+#        env:
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_GIT_WEBHOOK_URL}}
+#        if: success()
+#
+#      - name: pull-request-test-failure-slack-notice
+#        uses: 8398a7/action-slack@v3
+#        with:
+#          status: ${{ job.status }}
+#          fields: repo,message,commit,author,action,eventName,ref,workflow
+#        env:
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_GIT_WEBHOOK_URL}}
+#        if: failure()
